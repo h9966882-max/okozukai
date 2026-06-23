@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>おこづかい帳</title>
+<title>収支帳</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
   :root {
     --cream: #FEF9F2;
     --pink: #F4A7B9;
@@ -22,7 +22,6 @@
     --white: #FFFCF8;
     --shadow: rgba(180,140,130,0.12);
   }
-
   body {
     font-family: 'Noto Sans JP', sans-serif;
     background: var(--cream);
@@ -30,288 +29,164 @@
     min-height: 100vh;
     padding: 20px 16px 80px;
   }
+  .header { text-align: center; margin-bottom: 24px; }
+  .header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.05em; }
+  .header .subtitle { font-size: 0.78rem; color: var(--text-soft); margin-top: 2px; }
 
-  /* ヘッダー */
-  .header {
-    text-align: center;
-    margin-bottom: 24px;
-  }
-  .header h1 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: 0.05em;
-  }
-  .header .subtitle {
-    font-size: 0.78rem;
-    color: var(--text-soft);
-    margin-top: 2px;
-  }
-
-  /* 月ナビ */
   .month-nav {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 16px; margin-bottom: 20px;
   }
   .month-nav button {
-    background: var(--white);
-    border: 1.5px solid var(--sand);
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    font-size: 1rem;
-    color: var(--text-soft);
-    cursor: pointer;
-    transition: all 0.2s;
+    background: var(--white); border: 1.5px solid var(--sand);
+    border-radius: 50%; width: 36px; height: 36px;
+    font-size: 1rem; color: var(--text-soft); cursor: pointer; transition: all 0.2s;
   }
   .month-nav button:hover { border-color: var(--pink); color: var(--pink-dark); }
-  .month-nav .month-label {
-    font-size: 1rem;
-    font-weight: 700;
-    min-width: 100px;
-    text-align: center;
-  }
+  .month-nav .month-label { font-size: 1rem; font-weight: 700; min-width: 100px; text-align: center; }
 
-  /* サマリーカード */
-  .summary {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 24px;
-  }
+  .summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 24px; }
   .summary-card {
-    background: var(--white);
-    border-radius: 16px;
-    padding: 14px 10px;
-    text-align: center;
-    box-shadow: 0 2px 10px var(--shadow);
+    background: var(--white); border-radius: 16px; padding: 14px 10px;
+    text-align: center; box-shadow: 0 2px 10px var(--shadow);
   }
-  .summary-card .label {
-    font-size: 0.7rem;
-    color: var(--text-soft);
-    margin-bottom: 4px;
-  }
-  .summary-card .amount {
-    font-size: 1rem;
-    font-weight: 700;
-  }
+  .summary-card .label { font-size: 0.7rem; color: var(--text-soft); margin-bottom: 4px; }
+  .summary-card .amount { font-size: 1rem; font-weight: 700; }
   .summary-card.income .amount { color: var(--mint-dark); }
   .summary-card.expense .amount { color: var(--pink-dark); }
-  .summary-card.balance .amount { color: var(--text); }
-  .summary-card .icon {
-    font-size: 1.3rem;
-    margin-bottom: 4px;
-  }
+  .summary-card .icon { font-size: 1.3rem; margin-bottom: 4px; }
 
-  /* 入力フォーム */
+  /* 繰越バナー */
+  .carryover-banner {
+    background: linear-gradient(135deg, var(--mint-light), var(--pink-light));
+    border-radius: 14px; padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; box-shadow: 0 1px 6px var(--shadow);
+  }
+  .carryover-banner .co-label { font-size: 0.78rem; color: var(--text-soft); }
+  .carryover-banner .co-amount { font-size: 1rem; font-weight: 700; color: var(--text); }
+  .carryover-btn {
+    background: var(--white); border: 1.5px solid var(--mint-dark);
+    color: var(--mint-dark); border-radius: 10px; padding: 6px 12px;
+    font-family: inherit; font-size: 0.78rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .carryover-btn:hover { background: var(--mint-light); }
+
+  /* フォーム */
   .form-card {
-    background: var(--white);
-    border-radius: 20px;
-    padding: 20px;
-    box-shadow: 0 2px 12px var(--shadow);
-    margin-bottom: 24px;
+    background: var(--white); border-radius: 20px; padding: 20px;
+    box-shadow: 0 2px 12px var(--shadow); margin-bottom: 24px;
   }
-  .form-card h2 {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--text-soft);
-    margin-bottom: 14px;
-    letter-spacing: 0.05em;
-  }
-
-  .type-toggle {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-bottom: 14px;
-  }
+  .form-card h2 { font-size: 0.85rem; font-weight: 700; color: var(--text-soft); margin-bottom: 14px; letter-spacing: 0.05em; }
+  .type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
   .type-btn {
-    padding: 10px;
-    border-radius: 12px;
-    border: 2px solid transparent;
-    font-family: inherit;
-    font-size: 0.9rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
+    padding: 10px; border-radius: 12px; border: 2px solid transparent;
+    font-family: inherit; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
   }
-  .type-btn.income-btn {
-    background: var(--mint-light);
-    color: var(--mint-dark);
-    border-color: var(--mint-light);
-  }
-  .type-btn.income-btn.active {
-    border-color: var(--mint-dark);
-    background: var(--mint-light);
-  }
-  .type-btn.expense-btn {
-    background: var(--pink-light);
-    color: var(--pink-dark);
-    border-color: var(--pink-light);
-  }
-  .type-btn.expense-btn.active {
-    border-color: var(--pink-dark);
-    background: var(--pink-light);
-  }
+  .type-btn.income-btn { background: var(--mint-light); color: var(--mint-dark); border-color: var(--mint-light); }
+  .type-btn.income-btn.active { border-color: var(--mint-dark); }
+  .type-btn.expense-btn { background: var(--pink-light); color: var(--pink-dark); border-color: var(--pink-light); }
+  .type-btn.expense-btn.active { border-color: var(--pink-dark); }
 
-  .form-row {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  .form-row { display: flex; flex-direction: column; gap: 10px; }
+  .input-group { display: flex; flex-direction: column; gap: 4px; }
+  .input-group label { font-size: 0.72rem; color: var(--text-soft); font-weight: 500; }
+  .input-group input {
+    font-family: inherit; font-size: 0.95rem; padding: 10px 12px;
+    border: 1.5px solid var(--sand); border-radius: 12px;
+    background: var(--cream); color: var(--text); outline: none; transition: border-color 0.2s;
+    width: 100%;
   }
-  .input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .input-group label {
-    font-size: 0.72rem;
-    color: var(--text-soft);
-    font-weight: 500;
-  }
-  .input-group input, .input-group select {
-    font-family: inherit;
-    font-size: 0.95rem;
-    padding: 10px 12px;
-    border: 1.5px solid var(--sand);
-    border-radius: 12px;
-    background: var(--cream);
-    color: var(--text);
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .input-group input:focus, .input-group select:focus {
-    border-color: var(--pink);
-  }
-
-  .form-cols {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
+  .input-group input:focus { border-color: var(--pink); }
+  .form-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
   .submit-btn {
-    width: 100%;
-    margin-top: 14px;
-    padding: 12px;
-    border: none;
-    border-radius: 14px;
-    font-family: inherit;
-    font-size: 0.95rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    letter-spacing: 0.03em;
+    width: 100%; margin-top: 14px; padding: 12px; border: none; border-radius: 14px;
+    font-family: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+    transition: all 0.2s; letter-spacing: 0.03em;
   }
-  .submit-btn.income {
-    background: var(--mint-dark);
-    color: white;
-  }
-  .submit-btn.expense {
-    background: var(--pink-dark);
-    color: white;
-  }
+  .submit-btn.income { background: var(--mint-dark); color: white; }
+  .submit-btn.expense { background: var(--pink-dark); color: white; }
   .submit-btn:hover { opacity: 0.85; transform: translateY(-1px); }
   .submit-btn:active { transform: translateY(0); }
 
+  /* PDF・アクションボタン */
+  .action-bar {
+    display: flex; justify-content: flex-end; margin-bottom: 12px;
+  }
+  .pdf-btn {
+    background: var(--white); border: 1.5px solid var(--sand);
+    color: var(--text-soft); border-radius: 10px; padding: 7px 14px;
+    font-family: inherit; font-size: 0.78rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 5px;
+  }
+  .pdf-btn:hover { border-color: var(--pink-dark); color: var(--pink-dark); }
+
   /* 記録リスト */
-  .records-section h2 {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--text-soft);
-    margin-bottom: 12px;
-    letter-spacing: 0.05em;
-  }
-  .records-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+  .records-section h2 { font-size: 0.85rem; font-weight: 700; color: var(--text-soft); margin-bottom: 12px; letter-spacing: 0.05em; }
+  .records-list { display: flex; flex-direction: column; gap: 8px; }
   .record-item {
-    background: var(--white);
-    border-radius: 16px;
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    box-shadow: 0 1px 6px var(--shadow);
-    animation: fadeIn 0.25s ease;
+    background: var(--white); border-radius: 16px; padding: 12px 16px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 1px 6px var(--shadow); animation: fadeIn 0.25s ease;
   }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   .record-dot {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    flex-shrink: 0;
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
   }
   .record-dot.income { background: var(--mint-light); }
   .record-dot.expense { background: var(--pink-light); }
   .record-info { flex: 1; min-width: 0; }
-  .record-memo {
-    font-size: 0.9rem;
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .record-meta {
-    font-size: 0.7rem;
-    color: var(--text-soft);
-    margin-top: 1px;
-  }
-  .record-amount {
-    font-size: 1rem;
-    font-weight: 700;
-    flex-shrink: 0;
-  }
+  .record-memo { font-size: 0.9rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .record-meta { font-size: 0.7rem; color: var(--text-soft); margin-top: 1px; }
+  .record-amount { font-size: 1rem; font-weight: 700; flex-shrink: 0; }
   .record-amount.income { color: var(--mint-dark); }
   .record-amount.expense { color: var(--pink-dark); }
   .record-delete {
-    background: none;
-    border: none;
-    color: var(--sand);
-    font-size: 1rem;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 8px;
-    transition: color 0.2s;
-    flex-shrink: 0;
+    background: none; border: none; color: var(--sand);
+    font-size: 1rem; cursor: pointer; padding: 4px; border-radius: 8px;
+    transition: color 0.2s; flex-shrink: 0;
   }
   .record-delete:hover { color: var(--pink-dark); }
 
-  .empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    color: var(--text-soft);
-    font-size: 0.85rem;
-  }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-soft); font-size: 0.85rem; }
   .empty-state .emoji { font-size: 2rem; margin-bottom: 8px; }
+
+  /* モーダル（先月繰越確認） */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(74,63,58,0.35); backdrop-filter: blur(2px);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--white); border-radius: 24px; padding: 28px 24px;
+    max-width: 320px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    animation: fadeIn 0.2s ease;
+  }
+  .modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+  .modal p { font-size: 0.85rem; color: var(--text-soft); line-height: 1.6; margin-bottom: 20px; }
+  .modal .modal-amount { font-size: 1.3rem; font-weight: 700; color: var(--mint-dark); text-align: center; margin: 10px 0 20px; }
+  .modal-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-btns button {
+    padding: 11px; border-radius: 12px; font-family: inherit;
+    font-size: 0.9rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s;
+  }
+  .modal-cancel { background: var(--sand); color: var(--text-soft); }
+  .modal-confirm { background: var(--mint-dark); color: white; }
+  .modal-cancel:hover { opacity: 0.8; }
+  .modal-confirm:hover { opacity: 0.85; }
 
   /* トースト */
   .toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
+    position: fixed; bottom: 24px; left: 50%;
     transform: translateX(-50%) translateY(80px);
-    background: var(--text);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    transition: transform 0.3s ease;
-    z-index: 100;
-    white-space: nowrap;
+    background: var(--text); color: white; padding: 10px 20px;
+    border-radius: 20px; font-size: 0.85rem; font-weight: 500;
+    transition: transform 0.3s ease; z-index: 100; white-space: nowrap;
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
 </style>
@@ -319,8 +194,8 @@
 <body>
 
 <div class="header">
-  <h1>🌸 おこづかい帳</h1>
-  <div class="subtitle">やさしくお金を管理しよう</div>
+  <h1>🌸 支払管理帳</h1>
+  <div class="subtitle">残高管理しよう！</div>
 </div>
 
 <div class="month-nav">
@@ -345,6 +220,15 @@
     <div class="label">残高</div>
     <div class="amount" id="balance">¥0</div>
   </div>
+</div>
+
+<!-- 先月繰越バナー -->
+<div class="carryover-banner" id="carryoverBanner" style="display:none">
+  <div>
+    <div class="co-label">先月からの繰越</div>
+    <div class="co-amount" id="carryoverAmount">¥0</div>
+  </div>
+  <button class="carryover-btn" id="carryoverBtn">今月に繰り越す</button>
 </div>
 
 <div class="form-card">
@@ -373,20 +257,79 @@
 </div>
 
 <div class="records-section">
-  <h2>📖 今月の記録</h2>
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+    <h2 style="margin-bottom:0">📖 今月の記録</h2>
+    <button class="pdf-btn" onclick="exportPDF()">🖨️ PDF出力</button>
+  </div>
   <div class="records-list" id="recordsList"></div>
+</div>
+
+<!-- 繰越確認モーダル -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>🌿 先月の残高を繰り越す</h3>
+    <p>先月の残高を「繰越」として今月の収入に追加するよ。</p>
+    <div class="modal-amount" id="modalAmount"></div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="modal-confirm" onclick="confirmCarryover()">繰り越す</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
+  // ── データストア（メモリ + localStorage フォールバック） ──
+  const store = (() => {
+    const mem = {};
+    let hasLS = false;
+    try { localStorage.setItem('__test__', '1'); localStorage.removeItem('__test__'); hasLS = true; } catch(e) {}
+
+    return {
+      get(key) {
+        if (hasLS) {
+          try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) {}
+        }
+        return mem[key] !== undefined ? mem[key] : null;
+      },
+      set(key, val) {
+        mem[key] = val;
+        if (hasLS) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {} }
+      }
+    };
+  })();
+
   let currentType = 'income';
   let currentYear = new Date().getFullYear();
-  let currentMonth = new Date().getMonth(); // 0-indexed
+  let currentMonth = new Date().getMonth();
 
-  // 今日の日付をデフォルト設定
   const today = new Date();
   document.getElementById('date').value = today.toISOString().split('T')[0];
+
+  function storageKey(y, m) {
+    const yr = y !== undefined ? y : currentYear;
+    const mo = m !== undefined ? m : currentMonth;
+    return `okozukai:${yr}:${mo}`;
+  }
+
+  function loadRecords(y, m) {
+    return store.get(storageKey(y, m)) || [];
+  }
+
+  function saveRecords(records, y, m) {
+    store.set(storageKey(y, m), records);
+  }
+
+  function formatAmount(n) {
+    return '¥' + Math.abs(n).toLocaleString('ja-JP');
+  }
+
+  function calcBalance(records) {
+    const income = records.filter(r => r.type === 'income').reduce((s, r) => s + r.amount, 0);
+    const expense = records.filter(r => r.type === 'expense').reduce((s, r) => s + r.amount, 0);
+    return { income, expense, balance: income - expense };
+  }
 
   function setType(type) {
     currentType = type;
@@ -397,71 +340,95 @@
     btn.textContent = type === 'income' ? '＋ 収入を記録' : '－ 支出を記録';
   }
 
-  function storageKey() {
-    return `okozukai:${currentYear}:${currentMonth}`;
-  }
-
-  async function loadRecords() {
-    try {
-      const result = await window.storage.get(storageKey());
-      return result ? JSON.parse(result.value) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  async function saveRecords(records) {
-    await window.storage.set(storageKey(), JSON.stringify(records));
-  }
-
-  function formatAmount(n) {
-    return '¥' + n.toLocaleString('ja-JP');
-  }
-
   function updateSummary(records) {
-    const income = records.filter(r => r.type === 'income').reduce((s, r) => s + r.amount, 0);
-    const expense = records.filter(r => r.type === 'expense').reduce((s, r) => s + r.amount, 0);
+    const { income, expense, balance } = calcBalance(records);
     document.getElementById('totalIncome').textContent = formatAmount(income);
     document.getElementById('totalExpense').textContent = formatAmount(expense);
-    const bal = income - expense;
     const balEl = document.getElementById('balance');
-    balEl.textContent = formatAmount(Math.abs(bal));
-    balEl.style.color = bal < 0 ? 'var(--pink-dark)' : 'var(--text)';
+    balEl.textContent = formatAmount(balance);
+    balEl.style.color = balance < 0 ? 'var(--pink-dark)' : 'var(--text)';
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   function renderRecords(records) {
     const list = document.getElementById('recordsList');
-    if (records.length === 0) {
+    if (!records.length) {
       list.innerHTML = `<div class="empty-state"><div class="emoji">📭</div>まだ記録がないよ<br>上のフォームから追加してね</div>`;
       return;
     }
-    // 日付降順
     const sorted = [...records].sort((a, b) => b.date.localeCompare(a.date));
     list.innerHTML = sorted.map(r => {
       const icon = r.type === 'income' ? '🌿' : '🌷';
-      const dateStr = r.date.replace(/-/g, '/').slice(5); // MM/DD
-      return `
-        <div class="record-item">
-          <div class="record-dot ${r.type}">${icon}</div>
-          <div class="record-info">
-            <div class="record-memo">${escHtml(r.memo || '（メモなし）')}</div>
-            <div class="record-meta">${dateStr}</div>
-          </div>
-          <div class="record-amount ${r.type}">${r.type === 'income' ? '+' : '-'}${formatAmount(r.amount)}</div>
-          <button class="record-delete" onclick="deleteRecord('${r.id}')" title="削除">✕</button>
+      const dateStr = r.date.replace(/-/g, '/').slice(5);
+      return `<div class="record-item">
+        <div class="record-dot ${r.type}">${icon}</div>
+        <div class="record-info">
+          <div class="record-memo">${escHtml(r.memo || '（メモなし）')}</div>
+          <div class="record-meta">${dateStr}</div>
         </div>
-      `;
+        <div class="record-amount ${r.type}">${r.type === 'income' ? '+' : '-'}${formatAmount(r.amount)}</div>
+        <button class="record-delete" onclick="deleteRecord('${r.id}')" title="削除">✕</button>
+      </div>`;
     }).join('');
   }
 
-  function escHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  // 先月繰越バナー
+  function updateCarryoverBanner() {
+    let prevYear = currentYear, prevMonth = currentMonth - 1;
+    if (prevMonth < 0) { prevMonth = 11; prevYear--; }
+    const prevRecords = loadRecords(prevYear, prevMonth);
+    const { balance } = calcBalance(prevRecords);
+
+    const banner = document.getElementById('carryoverBanner');
+    // すでに繰越済みかチェック
+    const thisRecords = loadRecords();
+    const alreadyCarried = thisRecords.some(r => r.carryover === true);
+
+    if (balance !== 0 && !alreadyCarried) {
+      banner.style.display = 'flex';
+      document.getElementById('carryoverAmount').textContent = (balance < 0 ? '-' : '') + formatAmount(balance);
+      document.getElementById('carryoverBtn').onclick = () => openCarryoverModal(balance);
+    } else {
+      banner.style.display = 'none';
+    }
   }
 
-  async function refresh() {
-    const records = await loadRecords();
+  function openCarryoverModal(balance) {
+    document.getElementById('modalAmount').textContent = (balance < 0 ? '-' : '') + formatAmount(balance);
+    document.getElementById('modalOverlay').classList.add('open');
+    document.getElementById('modalOverlay')._balance = balance;
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+
+  function confirmCarryover() {
+    const balance = document.getElementById('modalOverlay')._balance;
+    const records = loadRecords();
+    // 繰越エントリを追加（収入として）
+    records.push({
+      id: Date.now().toString(),
+      type: balance >= 0 ? 'income' : 'expense',
+      memo: '先月繰越',
+      amount: Math.abs(balance),
+      date: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`,
+      carryover: true
+    });
+    saveRecords(records);
+    closeModal();
+    showToast('繰り越したよ 🌿');
+    refresh();
+  }
+
+  function refresh() {
+    const records = loadRecords();
     updateSummary(records);
     renderRecords(records);
+    updateCarryoverBanner();
   }
 
   function updateMonthLabel() {
@@ -469,19 +436,15 @@
   }
 
   document.getElementById('prevMonth').onclick = () => {
-    currentMonth--;
-    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-    updateMonthLabel();
-    refresh();
+    currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    updateMonthLabel(); refresh();
   };
   document.getElementById('nextMonth').onclick = () => {
-    currentMonth++;
-    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-    updateMonthLabel();
-    refresh();
+    currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    updateMonthLabel(); refresh();
   };
 
-  async function addRecord() {
+  function addRecord() {
     const memo = document.getElementById('memo').value.trim();
     const amount = parseInt(document.getElementById('amount').value);
     const date = document.getElementById('date').value;
@@ -489,29 +452,138 @@
     if (!amount || amount <= 0) { showToast('金額を入力してね 🌸'); return; }
     if (!date) { showToast('日付を選んでね 📅'); return; }
 
-    const records = await loadRecords();
-    records.push({
-      id: Date.now().toString(),
-      type: currentType,
-      memo: memo || '',
-      amount,
-      date
-    });
-    await saveRecords(records);
+    const records = loadRecords();
+    records.push({ id: Date.now().toString(), type: currentType, memo: memo || '', amount, date });
+    saveRecords(records);
 
     document.getElementById('memo').value = '';
     document.getElementById('amount').value = '';
-
     showToast(currentType === 'income' ? '収入を記録したよ 🌿' : '支出を記録したよ 🌷');
     refresh();
   }
 
-  async function deleteRecord(id) {
-    const records = await loadRecords();
-    const updated = records.filter(r => r.id !== id);
-    await saveRecords(updated);
+  function deleteRecord(id) {
+    const records = loadRecords().filter(r => r.id !== id);
+    saveRecords(records);
     showToast('削除したよ 🗑️');
     refresh();
+  }
+
+  // ── PDF出力 ──
+  function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) { showToast('PDF機能を読み込み中...'); return; }
+
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const records = loadRecords();
+    const { income, expense, balance } = calcBalance(records);
+
+    const monthStr = `${currentYear}年${currentMonth + 1}月`;
+
+    // フォント設定（英数字のみ、日本語はスキップ）
+    doc.setFont('helvetica');
+
+    // タイトル
+    doc.setFontSize(18);
+    doc.setTextColor(74, 63, 58);
+    doc.text(`Okozukai-cho  ${currentYear}/${currentMonth + 1}`, 20, 20);
+
+    doc.setFontSize(10);
+    doc.setTextColor(138, 122, 116);
+    doc.text(`${monthStr} / Output: ${new Date().toLocaleDateString('ja-JP')}`, 20, 28);
+
+    // 区切り線
+    doc.setDrawColor(240, 230, 211);
+    doc.line(20, 32, 190, 32);
+
+    // サマリー
+    doc.setFontSize(11);
+    doc.setTextColor(74, 63, 58);
+    doc.text('SUMMARY', 20, 42);
+
+    doc.setFontSize(10);
+    doc.setTextColor(123, 191, 170);
+    doc.text(`Nyukin (Income)`, 25, 51);
+    doc.setTextColor(74, 63, 58);
+    doc.text(`+${income.toLocaleString()} yen`, 100, 51);
+
+    doc.setTextColor(232, 128, 154);
+    doc.text(`Shishutsu (Expense)`, 25, 58);
+    doc.setTextColor(74, 63, 58);
+    doc.text(`-${expense.toLocaleString()} yen`, 100, 58);
+
+    doc.setTextColor(74, 63, 58);
+    doc.text(`Zandaka (Balance)`, 25, 65);
+    doc.setFontSize(12);
+    doc.setTextColor(balance >= 0 ? 74 : 232, balance >= 0 ? 63 : 128, balance >= 0 ? 58 : 154);
+    doc.text(`${balance >= 0 ? '+' : '-'}${Math.abs(balance).toLocaleString()} yen`, 100, 65);
+
+    doc.setDrawColor(240, 230, 211);
+    doc.line(20, 70, 190, 70);
+
+    // 明細ヘッダー
+    doc.setFontSize(11);
+    doc.setTextColor(74, 63, 58);
+    doc.text('RECORDS', 20, 80);
+
+    doc.setFontSize(9);
+    doc.setTextColor(138, 122, 116);
+    doc.text('Date', 20, 88);
+    doc.text('Type', 48, 88);
+    doc.text('Memo', 72, 88);
+    doc.text('Amount', 155, 88, { align: 'right' });
+
+    doc.setDrawColor(240, 230, 211);
+    doc.line(20, 90, 190, 90);
+
+    const sorted = [...records].sort((a, b) => a.date.localeCompare(b.date));
+    let y = 97;
+
+    sorted.forEach((r, i) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFontSize(9);
+      if (i % 2 === 0) {
+        doc.setFillColor(254, 249, 242);
+        doc.rect(18, y - 5, 174, 8, 'F');
+      }
+      doc.setTextColor(138, 122, 116);
+      doc.text(r.date.replace(/-/g, '/').slice(5), 20, y);
+
+      if (r.type === 'income') {
+        doc.setTextColor(123, 191, 170);
+        doc.text('IN', 48, y);
+      } else {
+        doc.setTextColor(232, 128, 154);
+        doc.text('OUT', 48, y);
+      }
+
+      doc.setTextColor(74, 63, 58);
+      // メモ：ASCII以外は省略せずそのまま（日本語は文字化けするが仕方なし）
+      const memoText = r.memo || '-';
+      const safeMemo = memoText.replace(/[^\x00-\x7F]/g, c => '');
+      doc.text(safeMemo || r.memo.slice(0, 10), 72, y);
+
+      const sign = r.type === 'income' ? '+' : '-';
+      doc.setTextColor(r.type === 'income' ? 123 : 232, r.type === 'income' ? 191 : 128, r.type === 'income' ? 170 : 154);
+      doc.text(`${sign}${r.amount.toLocaleString()}`, 155, y, { align: 'right' });
+
+      y += 8;
+    });
+
+    // フッター
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(138, 122, 116);
+      doc.text(`Okozukai-cho  ${monthStr}  |  p.${i}/${pageCount}`, 105, 290, { align: 'center' });
+    }
+
+    doc.save(`okozukai_${currentYear}_${String(currentMonth + 1).padStart(2, '0')}.pdf`);
+    showToast('PDFを出力したよ 🖨️');
   }
 
   function showToast(msg) {
@@ -521,15 +593,10 @@
     setTimeout(() => t.classList.remove('show'), 2200);
   }
 
-  // Enterキーで送信
-  document.getElementById('amount').addEventListener('keydown', e => {
-    if (e.key === 'Enter') addRecord();
-  });
-  document.getElementById('memo').addEventListener('keydown', e => {
-    if (e.key === 'Enter') addRecord();
-  });
+  document.getElementById('amount').addEventListener('keydown', e => { if (e.key === 'Enter') addRecord(); });
+  document.getElementById('memo').addEventListener('keydown', e => { if (e.key === 'Enter') addRecord(); });
+  document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 
-  // 初期化
   updateMonthLabel();
   refresh();
 </script>
