@@ -234,8 +234,10 @@
 <div class="form-card">
   <h2>✏️ 新しい記録</h2>
   <div class="type-toggle">
-    <button class="type-btn income-btn active" id="incomeBtn" onclick="setType('income')">🌿 収入</button>
-    <button class="type-btn expense-btn" id="expenseBtn" onclick="setType('expense')">🌷 支出</button>
+    <button class="type-btn income-btn active" id="incomeBtn" onclick="setType('income')">🌿 ツケ
+      
+    </button>
+    <button class="type-btn expense-btn" id="expenseBtn" onclick="setType('expense')">🌷 支払</button>
   </div>
   <div class="form-row">
     <div class="input-group">
@@ -253,7 +255,7 @@
       </div>
     </div>
   </div>
-  <button class="submit-btn income" id="submitBtn" onclick="addRecord()">＋ 収入を記録</button>
+  <button class="submit-btn income" id="submitBtn" onclick="addRecord()">＋ ツケを記録</button>
 </div>
 
 <div class="records-section">
@@ -268,7 +270,7 @@
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <h3>🌿 先月の残高を繰り越す</h3>
-    <p>先月の残高を「繰越」として今月の収入に追加するよ。</p>
+    <p>先月の残高を「繰越」として今月のツケに追加するよ。</p>
     <div class="modal-amount" id="modalAmount"></div>
     <div class="modal-btns">
       <button class="modal-cancel" onclick="closeModal()">キャンセル</button>
@@ -337,7 +339,7 @@
     document.getElementById('expenseBtn').classList.toggle('active', type === 'expense');
     const btn = document.getElementById('submitBtn');
     btn.className = `submit-btn ${type}`;
-    btn.textContent = type === 'income' ? '＋ 収入を記録' : '－ 支出を記録';
+    btn.textContent = type === 'income' ? '＋ ツケを記録' : '－ 支払を記録';
   }
 
   function updateSummary(records) {
@@ -409,7 +411,7 @@
   function confirmCarryover() {
     const balance = document.getElementById('modalOverlay')._balance;
     const records = loadRecords();
-    // 繰越エントリを追加（収入として）
+    // 繰越エントリを追加（ツケとして）
     records.push({
       id: Date.now().toString(),
       type: balance >= 0 ? 'income' : 'expense',
@@ -458,7 +460,7 @@
 
     document.getElementById('memo').value = '';
     document.getElementById('amount').value = '';
-    showToast(currentType === 'income' ? '収入を記録したよ 🌿' : '支出を記録したよ 🌷');
+    showToast(currentType === 'income' ? 'ツケを記録したよ 🌿' : '支払を記録したよ 🌷');
     refresh();
   }
 
