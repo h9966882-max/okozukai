@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>おこづかい帳</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --cream: #FEF9F2;
+    --pink: #F4A7B9;
+    --pink-light: #FDE8EE;
+    --pink-dark: #E8809A;
+    --mint: #A8D8C8;
+    --mint-light: #E4F4EE;
+    --mint-dark: #7BBFAA;
+    --sand: #F0E6D3;
+    --text: #4A3F3A;
+    --text-soft: #8A7A74;
+    --white: #FFFCF8;
+    --shadow: rgba(180,140,130,0.12);
+  }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px 16px 80px;
+  }
+
+  /* ヘッダー */
+  .header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.05em;
+  }
+  .header .subtitle {
+    font-size: 0.78rem;
+    color: var(--text-soft);
+    margin-top: 2px;
+  }
+
+  /* 月ナビ */
+  .month-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .month-nav button {
+    background: var(--white);
+    border: 1.5px solid var(--sand);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+    color: var(--text-soft);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .month-nav button:hover { border-color: var(--pink); color: var(--pink-dark); }
+  .month-nav .month-label {
+    font-size: 1rem;
+    font-weight: 700;
+    min-width: 100px;
+    text-align: center;
+  }
+
+  /* サマリーカード */
+  .summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .summary-card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 14px 10px;
+    text-align: center;
+    box-shadow: 0 2px 10px var(--shadow);
+  }
+  .summary-card .label {
+    font-size: 0.7rem;
+    color: var(--text-soft);
+    margin-bottom: 4px;
+  }
+  .summary-card .amount {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .summary-card.income .amount { color: var(--mint-dark); }
+  .summary-card.expense .amount { color: var(--pink-dark); }
+  .summary-card.balance .amount { color: var(--text); }
+  .summary-card .icon {
+    font-size: 1.3rem;
+    margin-bottom: 4px;
+  }
+
+  /* 入力フォーム */
+  .form-card {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 2px 12px var(--shadow);
+    margin-bottom: 24px;
+  }
+  .form-card h2 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-soft);
+    margin-bottom: 14px;
+    letter-spacing: 0.05em;
+  }
+
+  .type-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .type-btn {
+    padding: 10px;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .type-btn.income-btn {
+    background: var(--mint-light);
+    color: var(--mint-dark);
+    border-color: var(--mint-light);
+  }
+  .type-btn.income-btn.active {
+    border-color: var(--mint-dark);
+    background: var(--mint-light);
+  }
+  .type-btn.expense-btn {
+    background: var(--pink-light);
+    color: var(--pink-dark);
+    border-color: var(--pink-light);
+  }
+  .type-btn.expense-btn.active {
+    border-color: var(--pink-dark);
+    background: var(--pink-light);
+  }
+
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .input-group label {
+    font-size: 0.72rem;
+    color: var(--text-soft);
+    font-weight: 500;
+  }
+  .input-group input, .input-group select {
+    font-family: inherit;
+    font-size: 0.95rem;
+    padding: 10px 12px;
+    border: 1.5px solid var(--sand);
+    border-radius: 12px;
+    background: var(--cream);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-group input:focus, .input-group select:focus {
+    border-color: var(--pink);
+  }
+
+  .form-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .submit-btn {
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px;
+    border: none;
+    border-radius: 14px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+  }
+  .submit-btn.income {
+    background: var(--mint-dark);
+    color: white;
+  }
+  .submit-btn.expense {
+    background: var(--pink-dark);
+    color: white;
+  }
+  .submit-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+  .submit-btn:active { transform: translateY(0); }
+
+  /* 記録リスト */
+  .records-section h2 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-soft);
+    margin-bottom: 12px;
+    letter-spacing: 0.05em;
+  }
+  .records-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .record-item {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 1px 6px var(--shadow);
+    animation: fadeIn 0.25s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .record-dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .record-dot.income { background: var(--mint-light); }
+  .record-dot.expense { background: var(--pink-light); }
+  .record-info { flex: 1; min-width: 0; }
+  .record-memo {
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .record-meta {
+    font-size: 0.7rem;
+    color: var(--text-soft);
+    margin-top: 1px;
+  }
+  .record-amount {
+    font-size: 1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .record-amount.income { color: var(--mint-dark); }
+  .record-amount.expense { color: var(--pink-dark); }
+  .record-delete {
+    background: none;
+    border: none;
+    color: var(--sand);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 8px;
+    transition: color 0.2s;
+    flex-shrink: 0;
+  }
+  .record-delete:hover { color: var(--pink-dark); }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-soft);
+    font-size: 0.85rem;
+  }
+  .empty-state .emoji { font-size: 2rem; margin-bottom: 8px; }
+
+  /* トースト */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--text);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: transform 0.3s ease;
+    z-index: 100;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🌸 おこづかい帳</h1>
+  <div class="subtitle">やさしくお金を管理しよう</div>
+</div>
+
+<div class="month-nav">
+  <button id="prevMonth">‹</button>
+  <div class="month-label" id="monthLabel"></div>
+  <button id="nextMonth">›</button>
+</div>
+
+<div class="summary">
+  <div class="summary-card income">
+    <div class="icon">🌿</div>
+    <div class="label">収入</div>
+    <div class="amount" id="totalIncome">¥0</div>
+  </div>
+  <div class="summary-card expense">
+    <div class="icon">🌷</div>
+    <div class="label">支出</div>
+    <div class="amount" id="totalExpense">¥0</div>
+  </div>
+  <div class="summary-card balance">
+    <div class="icon">✨</div>
+    <div class="label">残高</div>
+    <div class="amount" id="balance">¥0</div>
+  </div>
+</div>
+
+<div class="form-card">
+  <h2>✏️ 新しい記録</h2>
+  <div class="type-toggle">
+    <button class="type-btn income-btn active" id="incomeBtn" onclick="setType('income')">🌿 収入</button>
+    <button class="type-btn expense-btn" id="expenseBtn" onclick="setType('expense')">🌷 支出</button>
+  </div>
+  <div class="form-row">
+    <div class="input-group">
+      <label>メモ</label>
+      <input type="text" id="memo" placeholder="例：ランチ、お給料...">
+    </div>
+    <div class="form-cols">
+      <div class="input-group">
+        <label>金額（円）</label>
+        <input type="number" id="amount" placeholder="0" min="0">
+      </div>
+      <div class="input-group">
+        <label>日付</label>
+        <input type="date" id="date">
+      </div>
+    </div>
+  </div>
+  <button class="submit-btn income" id="submitBtn" onclick="addRecord()">＋ 収入を記録</button>
+</div>
+
+<div class="records-section">
+  <h2>📖 今月の記録</h2>
+  <div class="records-list" id="recordsList"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let currentType = 'income';
+  let currentYear = new Date().getFullYear();
+  let currentMonth = new Date().getMonth(); // 0-indexed
+
+  // 今日の日付をデフォルト設定
+  const today = new Date();
+  document.getElementById('date').value = today.toISOString().split('T')[0];
+
+  function setType(type) {
+    currentType = type;
+    document.getElementById('incomeBtn').classList.toggle('active', type === 'income');
+    document.getElementById('expenseBtn').classList.toggle('active', type === 'expense');
+    const btn = document.getElementById('submitBtn');
+    btn.className = `submit-btn ${type}`;
+    btn.textContent = type === 'income' ? '＋ 収入を記録' : '－ 支出を記録';
+  }
+
+  function storageKey() {
+    return `okozukai:${currentYear}:${currentMonth}`;
+  }
+
+  async function loadRecords() {
+    try {
+      const result = await window.storage.get(storageKey());
+      return result ? JSON.parse(result.value) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  async function saveRecords(records) {
+    await window.storage.set(storageKey(), JSON.stringify(records));
+  }
+
+  function formatAmount(n) {
+    return '¥' + n.toLocaleString('ja-JP');
+  }
+
+  function updateSummary(records) {
+    const income = records.filter(r => r.type === 'income').reduce((s, r) => s + r.amount, 0);
+    const expense = records.filter(r => r.type === 'expense').reduce((s, r) => s + r.amount, 0);
+    document.getElementById('totalIncome').textContent = formatAmount(income);
+    document.getElementById('totalExpense').textContent = formatAmount(expense);
+    const bal = income - expense;
+    const balEl = document.getElementById('balance');
+    balEl.textContent = formatAmount(Math.abs(bal));
+    balEl.style.color = bal < 0 ? 'var(--pink-dark)' : 'var(--text)';
+  }
+
+  function renderRecords(records) {
+    const list = document.getElementById('recordsList');
+    if (records.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="emoji">📭</div>まだ記録がないよ<br>上のフォームから追加してね</div>`;
+      return;
+    }
+    // 日付降順
+    const sorted = [...records].sort((a, b) => b.date.localeCompare(a.date));
+    list.innerHTML = sorted.map(r => {
+      const icon = r.type === 'income' ? '🌿' : '🌷';
+      const dateStr = r.date.replace(/-/g, '/').slice(5); // MM/DD
+      return `
+        <div class="record-item">
+          <div class="record-dot ${r.type}">${icon}</div>
+          <div class="record-info">
+            <div class="record-memo">${escHtml(r.memo || '（メモなし）')}</div>
+            <div class="record-meta">${dateStr}</div>
+          </div>
+          <div class="record-amount ${r.type}">${r.type === 'income' ? '+' : '-'}${formatAmount(r.amount)}</div>
+          <button class="record-delete" onclick="deleteRecord('${r.id}')" title="削除">✕</button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function refresh() {
+    const records = await loadRecords();
+    updateSummary(records);
+    renderRecords(records);
+  }
+
+  function updateMonthLabel() {
+    document.getElementById('monthLabel').textContent = `${currentYear}年${currentMonth + 1}月`;
+  }
+
+  document.getElementById('prevMonth').onclick = () => {
+    currentMonth--;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    updateMonthLabel();
+    refresh();
+  };
+  document.getElementById('nextMonth').onclick = () => {
+    currentMonth++;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    updateMonthLabel();
+    refresh();
+  };
+
+  async function addRecord() {
+    const memo = document.getElementById('memo').value.trim();
+    const amount = parseInt(document.getElementById('amount').value);
+    const date = document.getElementById('date').value;
+
+    if (!amount || amount <= 0) { showToast('金額を入力してね 🌸'); return; }
+    if (!date) { showToast('日付を選んでね 📅'); return; }
+
+    const records = await loadRecords();
+    records.push({
+      id: Date.now().toString(),
+      type: currentType,
+      memo: memo || '',
+      amount,
+      date
+    });
+    await saveRecords(records);
+
+    document.getElementById('memo').value = '';
+    document.getElementById('amount').value = '';
+
+    showToast(currentType === 'income' ? '収入を記録したよ 🌿' : '支出を記録したよ 🌷');
+    refresh();
+  }
+
+  async function deleteRecord(id) {
+    const records = await loadRecords();
+    const updated = records.filter(r => r.id !== id);
+    await saveRecords(updated);
+    showToast('削除したよ 🗑️');
+    refresh();
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // Enterキーで送信
+  document.getElementById('amount').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addRecord();
+  });
+  document.getElementById('memo').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addRecord();
+  });
+
+  // 初期化
+  updateMonthLabel();
+  refresh();
+</script>
+</body>
+</html>
